@@ -2,11 +2,8 @@ package utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -42,13 +39,11 @@ public class ParserUtils {
         && metadata[3].matches(metadata[3].toLowerCase()) && metadata[4].equals(metadata[4].toUpperCase());
   }
 
-  public static JobMetadata parseMetadata(FileSystem fs, Path jobFolderPath, String jobIdRegex) {
-    JobMetadata jobMetadata = new JobMetadata();
-    DateFormat simple = new SimpleDateFormat("dd MMM yyyy HH:mm:ss:SSS Z");
+  public static JobMetadata parseMetadata(FileSystem fs, Path jobFolderPath, String jobIdRegex) throws Exception {
     String[] metadata;
 
     if (!pathExists(fs, jobFolderPath)) {
-      return jobMetadata;
+      throw new Exception(jobFolderPath.toString() + " doesn't exist.");
     }
 
     try {
@@ -61,25 +56,17 @@ public class ParserUtils {
           .toArray(String[]::new);
     } catch (IOException e) {
       LOG.error("Failed to scan " + jobFolderPath.toString(), e);
-      return jobMetadata;
+      throw new Exception("Failed to scan " + jobFolderPath.toString(), e);
     }
 
     if (!isValidMetadata(metadata, jobIdRegex)) {
       // this should never happen unless user rename the history file
       LOG.error("Metadata isn't valid");
-      return jobMetadata;
+      throw new Exception("Metadata isn't valid");
     }
 
-    jobMetadata.setId(metadata[0]);
-    jobMetadata.setJobLink("/jobs/" + jobMetadata.getId());
-    jobMetadata.setConfigLink("/config/" + jobMetadata.getId());
-    jobMetadata.setStarted(simple.format(new Date(Long.parseLong(metadata[1]))));
-    jobMetadata.setCompleted(simple.format(new Date(Long.parseLong(metadata[2]))));
-    jobMetadata.setUser(metadata[3]);
-    jobMetadata.setStatus(metadata[4]);
-
     LOG.debug("Successfully parsed metadata");
-    return jobMetadata;
+    return JobMetadata.newInstance(metadata);
   }
 
   public static List<JobConfig> parseConfig(FileSystem fs, Path configFilePath) {
