@@ -43,18 +43,18 @@ public class JobsMetadataPageController extends Controller {
     Path tonyHistoryFolder = new Path(config.getString("tony.historyFolder"));
     String jobFolderRegex = "^application_\\d+_\\d+$";
     JobMetadata tmpMetadata;
-    String appId;
+    String jobId;
 
     for (Path f : getJobFolders(myFs, tonyHistoryFolder, jobFolderRegex)) {
-      appId = getJobId(f.toString());
-      if (cache.asMap().containsKey(appId)) {
-        tmpMetadata = cache.getIfPresent(appId);
+      jobId = getJobId(f.toString());
+      if (cache.asMap().containsKey(jobId)) {
+        tmpMetadata = cache.getIfPresent(jobId);
         listOfMetadata.add(tmpMetadata);
         continue;
       }
       try {
         tmpMetadata = parseMetadata(myFs, f, jobFolderRegex);
-        cache.put(appId, tmpMetadata);
+        cache.put(jobId, tmpMetadata);
         listOfMetadata.add(tmpMetadata);
       } catch (Exception e) {
         LOG.error("Couldn't parse " + f, e);
