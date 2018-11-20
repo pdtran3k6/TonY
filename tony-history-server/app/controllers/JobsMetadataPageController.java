@@ -47,20 +47,18 @@ public class JobsMetadataPageController extends Controller {
 
     for (Path f : getJobFolders(myFs, tonyHistoryFolder, jobFolderRegex)) {
       jobId = getJobId(f.toString());
-      if (cache.asMap().containsKey(jobId)) {
-        tmpMetadata = cache.getIfPresent(jobId);
-        listOfMetadata.add(tmpMetadata);
-        continue;
+      tmpMetadata = cache.getIfPresent(jobId);
+      if (tmpMetadata == null) {
+        try {
+          tmpMetadata = parseMetadata(myFs, f, jobFolderRegex);
+          cache.put(jobId, tmpMetadata);
+        } catch (Exception e) {
+          LOG.error("Couldn't parse " + f, e);
+          continue;
+        }
       }
-      try {
-        tmpMetadata = parseMetadata(myFs, f, jobFolderRegex);
-        cache.put(jobId, tmpMetadata);
-        listOfMetadata.add(tmpMetadata);
-      } catch (Exception e) {
-        LOG.error("Couldn't parse " + f, e);
-      }
+      listOfMetadata.add(tmpMetadata);
     }
-
     return ok(views.html.metadata.render(listOfMetadata));
   }
 }
